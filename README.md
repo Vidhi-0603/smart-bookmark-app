@@ -1,36 +1,161 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 📌 Realtime Bookmark Manager
 
-## Getting Started
+A simple yet powerful bookmark manager built with **Next.js (App Router)** and **Supabase**, featuring Google OAuth login, protected routes, and realtime updates across multiple tabs.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+## 🛠 Tech Stack
+
+- **Frontend:** Next.js (App Router), React, TypeScript, Tailwind CSS  
+- **Backend & Database:** Supabase (PostgreSQL)  
+- **Authentication:** Supabase Auth (Google OAuth)  
+- **Realtime:** Supabase Realtime (Postgres Changes)  
+- **Deployment:** Vercel  
+
+---
+
+## ✨ Features
+
+- 🔐 Login with Google OAuth
+- 🛡 Protected dashboard route
+- ➕ Add bookmarks easily
+- ❌ Delete bookmarks
+- 🔄 Realtime sync between tabs
+- 🔒 User-specific Row Level Security (RLS)
+- ☁ Deployed live on Vercel
+
+---
+
+## 📂 Project Structure
+
+```
+app/
+  ├── page.tsx
+  ├── auth/
+  │     ├── callback/
+  │        |── route.ts
+  ├── dashboard/
+  │     ├── page.tsx
+  │     └── DashboardClient.tsx
+lib/
+  ├── supabase/
+  │     ├── server.ts
+  └── supabaseClient.ts
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🔐 Route Protection
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Initially, the app relied solely on **supabase-js** on the client to protect routes. This worked, but users could briefly see the dashboard before the redirect, and session validation was only client-side.
 
-## Learn More
+- ✅ To fix this, we transitioned to **Supabase SSR** (server-side) for route protection. Now, the server checks the session before rendering the dashboard, ensuring no sensitive data flashes on the screen before redirect.
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🔄 Realtime Implementation
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Realtime is powered by Supabase Postgres Changes. Each user sees only their bookmarks in real-time:
 
-## Deploy on Vercel
+```ts
+supabase
+  .channel("bookmarks-realtime")
+  .on("postgres_changes", { ... })
+  .subscribe();
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🔒 Row Level Security (RLS)
+
+Strict RLS policies ensure that users can only access their own bookmarks:
+
+- SELECT, INSERT, UPDATE, DELETE policies scoped with:
+
+```sql
+auth.uid() = user_id
+```
+
+This keeps each user's data private and ensures realtime updates respect these restrictions.
+
+---
+
+## Challenges Faced
+
+### 1️⃣ Realtime INSERT Sometimes Not Firing
+
+- Issue: Occasionally, inserts wouldn't trigger realtime events.  
+- Solution:
+  - Ensure only **one subscription per user**
+  - Clean up channels on unmount
+  - Set `REPLICA IDENTITY FULL` on the bookmarks table
+  - Corrected RLS policies to use `auth.uid() = user_id`
+
+### 2️⃣ Realtime Updates Across Tabs Inconsistent
+
+- Issue: Changes in one tab didn't always appear in another.
+- Solution:
+  - Verified RLS SELECT policy for user isolation
+  - Made sure UUID for `user_id` matched auth.uid()
+  - Stabilized subscription to depend only on `[user?.id]`
+
+### 3️⃣ Optimistic UI Causing Duplicates
+
+- Issue: `.insert().select()` returned an array, sometimes creating duplicates.
+- Solution: Used `data[0]` for optimistic updates and prevented duplicates.
+
+### 4️⃣ OAuth Redirect Issues
+
+- Issue: Login worked locally but failed on Vercel.
+- Solution:
+  - Updated Supabase Auth redirect URLs to include Vercel domain
+  - Added Vercel domain in Google Cloud OAuth settings
+
+### 5️⃣ Environment Variables in Production
+
+- Issue: `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` were missing on deployment.
+- Solution: Added them in Vercel project settings with the correct prefix.
+
+### 6️⃣ Transition from supabase-js to SSR
+
+- Issue: Protecting the dashboard route purely on the client caused brief exposure of sensitive data.
+- Solution: Migrated to Supabase SSR (`createServerClient`) to handle auth on the server. Now the dashboard only renders if the session is valid, making the app secure and production-ready.
+
+---
+
+## 🧪 How to Run Locally
+
+```bash
+git clone <repo>
+cd project
+npm install
+npm run dev
+```
+
+Create `.env.local`:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=your_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_key
+```
+
+---
+
+## 📈 Future Improvements
+
+- Edit bookmark feature
+- Loading states & animations
+- Pagination
+- Bookmark categories
+- Dark mode
+- Drag-and-drop reordering
+
+---
+
+## 👩‍💻 Author
+
+Vidhilika Gupta  
+MCA Final Year Student  
+Aspiring Full Stack Developer
+
