@@ -1,4 +1,4 @@
-# 📌 Realtime Bookmark Manager
+# 📌 Smart Bookmark App
 
 A simple yet powerful bookmark manager built with **Next.js (App Router)** and **Supabase**, featuring Google OAuth login, protected routes, and realtime updates across multiple tabs.
 
