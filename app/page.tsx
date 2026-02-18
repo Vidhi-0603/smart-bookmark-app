@@ -17,7 +17,7 @@ export default function LoginPage() {
     <div className="flex h-screen items-center justify-center">
       <button
         onClick={handleLogin}
-        className="bg-black text-white px-4 py-2 rounded"
+        className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-sm transition"
       >
         Login with Google
       </button>
