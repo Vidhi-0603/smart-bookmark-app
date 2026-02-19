@@ -24,6 +24,7 @@ export default function DashboardClient({ user }: any) {
     }
     setBookmarks(data || []);
   };
+
   useEffect(() => {
     if (!user?.id) return;
 
@@ -95,10 +96,12 @@ export default function DashboardClient({ user }: any) {
       console.log(error);
       return;
     }
+
     setBookmarks((prev) => {
       if (prev.some((b) => b.id === data.id)) return prev;
       return [data, ...prev];
     });
+
     setTitle("");
     setUrl("");
   };
